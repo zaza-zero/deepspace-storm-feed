@@ -53,6 +53,19 @@ The raw reply is saved unchanged to `data/donki_gst_2024-05-01_to_2024-05-31.jso
 and the terminal output to `output/reference_run_output.txt`. Without
 `--start/--end`, the script always uses the computed 30-day window ending today.
 
+**Result: 5 geomagnetic storms.** Every record in the raw file carries an event ID,
+a UTC start time and Kp strength readings (each with its own UTC `observedTime`):
+
+| Event ID (`gstID`) | Start (UTC) | Kp readings | Peak Kp |
+|---|---|---|---|
+| `2024-05-02T15:00:00-GST-001` | 2024-05-02 15:00 | 2 | 6.67 |
+| `2024-05-10T15:00:00-GST-001` | 2024-05-10 15:00 | 13 | **9.0** (Gannon storm) |
+| `2024-05-12T21:00:00-GST-001` | 2024-05-12 21:00 | 3 | 6.33 |
+| `2024-05-16T06:00:00-GST-001` | 2024-05-16 06:00 | 1 | 6.0 |
+| `2024-05-17T18:00:00-GST-001` | 2024-05-17 18:00 | 1 | 6.0 |
+
+This shows the empty live result above is a quiet month, not a broken request.
+
 ### What each event contains when storms occur
 
 When the window does contain storms, every record in the saved file carries these
