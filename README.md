@@ -39,6 +39,20 @@ error message instead of a list, and the script would stop without saving a file
 For the DeepSpace Watch table this is still useful: it confirms a quiet 30 days,
 which the manual table could not tell us with any confidence.
 
+### Reference sample: proof the feed returns real records
+
+Because the live window came back empty, the same script was also run once over a
+window with known storms, May 2024 (the "Gannon" storm, Kp 9). This is **reference
+data only**, not the current feed:
+
+```bash
+python3 fetch_storms.py --start 2024-05-01 --end 2024-05-31 | tee output/reference_run_output.txt
+```
+
+The raw reply is saved unchanged to `data/donki_gst_2024-05-01_to_2024-05-31.json`,
+and the terminal output to `output/reference_run_output.txt`. Without
+`--start/--end`, the script always uses the computed 30-day window ending today.
+
 ### What each event contains when storms occur
 
 When the window does contain storms, every record in the saved file carries these
