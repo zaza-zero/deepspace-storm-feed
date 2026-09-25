@@ -1,0 +1,4 @@
+NASA DONKI geomagnetic storm (GST) fetch
+Date range (UTC): 2026-08-26 to 2026-09-25 (30 days)
+Events pulled:    0
+Raw response saved to: data/donki_gst_2026-08-26_to_2026-09-25.json
