@@ -4,12 +4,13 @@ Reads the API key from the NASA_API_KEY environment variable, saves NASA's
 response byte for byte under data/, and prints the event count and the window.
 """
 
+import argparse
 import json
 import os
 import sys
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 DONKI_GST_URL = "https://api.nasa.gov/DONKI/GST"
@@ -37,7 +38,19 @@ def main():
     if not api_key:
         sys.exit("NASA_API_KEY is not set. Example: export NASA_API_KEY=DEMO_KEY")
 
-    start, end = compute_window()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--start", type=date.fromisoformat,
+                        help="Reference pull only: explicit start date (YYYY-MM-DD). Needs --end.")
+    parser.add_argument("--end", type=date.fromisoformat,
+                        help="Reference pull only: explicit end date (YYYY-MM-DD). Needs --start.")
+    args = parser.parse_args()
+    if (args.start is None) != (args.end is None):
+        parser.error("--start and --end must be given together")
+    if args.start and args.start > args.end:
+        parser.error("--start must be on or before --end")
+
+    start, end = (args.start, args.end) if args.start else compute_window()
+    label = "reference window" if args.start else f"{WINDOW_DAYS} days"
     raw = fetch_raw(start, end, api_key)
 
     DATA_DIR.mkdir(exist_ok=True)
@@ -48,7 +61,7 @@ def main():
     events = json.loads(body) if body else []
 
     print("NASA DONKI geomagnetic storm (GST) fetch")
-    print(f"Date range (UTC): {start.isoformat()} to {end.isoformat()} ({WINDOW_DAYS} days)")
+    print(f"Date range (UTC): {start.isoformat()} to {end.isoformat()} ({label})")
     print(f"Events pulled:    {len(events)}")
     for event in events:
         kp = [k.get("kpIndex") for k in event.get("allKpIndex", [])]

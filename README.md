@@ -1,22 +1,85 @@
 # DeepSpace Storm Feed
 
 The first piece of an automated space-weather feed. `fetch_storms.py` pulls every
-**geomagnetic storm (GST)** event NASA's DONKI service logged in the **last 30 days**
-and saves NASA's reply exactly as it was sent.
+**geomagnetic storm (GST)** event that NASA's DONKI service logged in the **last 30 days**,
+saves NASA's reply exactly as it was sent, and reports what it found.
 
 ## Why this exists
 
-The legacy **DeepSpace Watch** table is filled by hand, so it is always behind:
-right now its data is **one day old**, and it goes further out of date each day
-nobody updates it. This script replaces that manual step with a fetch that anyone
-(or a scheduler, later) can rerun.
+The legacy **DeepSpace Watch** table is filled by hand, so it is always behind.
+Right now its data is **one day old**, and it falls further behind every day nobody
+updates it. This feed replaces that manual step with a fetch anyone can rerun (and a
+scheduler can run later), always covering the latest 30 days.
 
-## What it does
+## Latest run: results
+
+Run on **2026-09-25** with `NASA_API_KEY=DEMO_KEY`:
+
+```
+NASA DONKI geomagnetic storm (GST) fetch
+Date range (UTC): 2026-08-26 to 2026-09-25 (30 days)
+Events pulled:    0
+Raw response saved to: data/donki_gst_2026-08-26_to_2026-09-25.json
+```
+
+| What | Value |
+|---|---|
+| Window (UTC) | 2026-08-26 → 2026-09-25, 30 days |
+| Geomagnetic storms found | **0** |
+| NASA's raw reply | `[]` in [`data/donki_gst_2026-08-26_to_2026-09-25.json`](data/donki_gst_2026-08-26_to_2026-09-25.json) |
+| Terminal output (as run) | [`output/run_output.txt`](output/run_output.txt) |
+
+### What "0 events" means
+
+The request succeeded. NASA answered with an empty list (`[]`), which is DONKI's
+way of saying **no geomagnetic storm was recorded in this window**. It is a real
+reading, not an error: if the key or the request were wrong, NASA would return an
+error message instead of a list, and the script would stop without saving a file.
+
+For the DeepSpace Watch table this is still useful: it confirms a quiet 30 days,
+which the manual table could not tell us with any confidence.
+
+### Reference sample: proof the feed returns real records
+
+Because the live window came back empty, the same script was also run once over a
+window with known storms, May 2024 (the "Gannon" storm, Kp 9). This is **reference
+data only**, not the current feed:
+
+```bash
+python3 fetch_storms.py --start 2024-05-01 --end 2024-05-31 | tee output/reference_run_output.txt
+```
+
+The raw reply is saved unchanged to `data/donki_gst_2024-05-01_to_2024-05-31.json`,
+and the terminal output to `output/reference_run_output.txt`. Without
+`--start/--end`, the script always uses the computed 30-day window ending today.
+
+### What each event contains when storms occur
+
+When the window does contain storms, every record in the saved file carries these
+fields straight from NASA (nothing is renamed or removed):
+
+| Field | Meaning |
+|---|---|
+| `gstID` | Unique event identifier, e.g. `2026-09-01T09:00:00-GST-001` |
+| `startTime` | When the storm began, in UTC |
+| `allKpIndex[].kpIndex` | Storm strength on the Kp scale (5 = minor … 9 = extreme) |
+| `allKpIndex[].observedTime` | UTC time of each Kp reading |
+| `linkedEvents` | Related solar events (e.g. the CME that caused it) |
+| `link` | NASA's page for the event |
+
+And the terminal report lists one line per storm under the count:
+
+```
+Events pulled:    1
+  <gstID>  start=<startTime UTC>  Kp=[<kpIndex readings>]
+```
+
+## How it works
 
 1. Works out the window from today's UTC date: today minus 30 days → today. No dates are hardcoded.
 2. Calls `https://api.nasa.gov/DONKI/GST` for that window.
 3. Saves the raw JSON response, byte for byte, to `data/donki_gst_<start>_to_<end>.json`.
-4. Prints how many events were pulled and the date range. Each event line shows its ID (`gstID`), UTC start time (`startTime`) and storm strength (`kpIndex` readings).
+4. Prints the event count, the date range, and one line per event.
 
 ## Run it
 
@@ -24,18 +87,8 @@ Requires Python 3.9+ and no third-party packages.
 
 ```bash
 export NASA_API_KEY=DEMO_KEY   # or your own key from https://api.nasa.gov
-python3 fetch_storms.py
+mkdir -p output && python3 fetch_storms.py | tee output/run_output.txt
 ```
 
 The key is read from the `NASA_API_KEY` environment variable only. It is never
-written into code or committed. `.env` is git-ignored.
-
-## Latest run
-
-The terminal output of the most recent run is committed in
-[`output/run_output.txt`](output/run_output.txt). It shows the event count and the
-exact date range. It was captured with:
-
-```bash
-mkdir -p output && python3 fetch_storms.py | tee output/run_output.txt
-```
+written into code or committed, and `.env` is git-ignored.
